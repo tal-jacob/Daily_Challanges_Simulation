@@ -194,7 +194,7 @@
     <li>Open the popup, press Play, spin with bet 0.05: winnings land, but no challenge progress (min bet rule). Switch to 0.10 and watch R7 checkpoints.</li>
     <li>Complete and claim: R2 = manual; the next challenge unlocks with background progress (R5), sometimes straight to Claim.</li>
     <li>Press "End cycle" three times: on day 4 the list loops — same challenge ids, new positions (R3's reason). Unclaimed rewards auto-collect (R2 = auto_expiry) and unfinished challenges write R12.</li>
-    <li>Press "Risk-exclude Jini Studios" (R10), then "End event" and read R4's closing totals. Blue lines = the spec today; amber lines = the gap we're asking to close.</li>
+    <li>Press "Risk-exclude Jini Studios" (R10) — and press it again for total exclusion (Game Unavailable). Then "End event" and read R4's closing totals. Blue lines = the spec today; amber lines = the gap we're asking to close.</li>
   </ol>
 </details>
 
@@ -218,7 +218,7 @@ var GAMES={'Digging Gold':'Jini Studios','Fire Stampede':'Pragmatic Play'};
 var SC_CFG=[
  {id:'chal_201',name:'Win 3 times in Digging Gold',kind:'win',need:3,tg:{game:'Digging Gold'},rw:{sc:0.5,stars:2},dt:'single_game'},
  {id:'chal_202',name:'Play 5 times in any game',kind:'play',need:5,tg:{},rw:{gc:100000,stars:2},dt:'any_random'},
- {id:'chal_203',name:'Win 2.00 SC in any game',kind:'amt',need:2,tg:{},rw:{sc:1.5,stars:2},blur:true,dt:'any_random'},
+ {id:'chal_203',name:'Win 2.00 SC in any game',kind:'amt',need:2,tg:{},rw:{sc:1.5,fs:50,stars:2},blur:true,dt:'any_random'},
  {id:'chal_204',name:'Play 3 times in Fire Stampede',kind:'play',need:3,tg:{game:'Fire Stampede'},rw:{sc:0.3,stars:2},dt:'single_game'},
  {id:'chal_205',name:'Win 2 times in any Jini Studios game',kind:'win',need:2,tg:{prov:'Jini Studios'},rw:{gc:80000,stars:2},dt:'provider_random'},
  {id:'chal_206',name:'Win 1.50 SC in any game',kind:'amt',need:1.5,tg:{},rw:{sc:1,stars:2},blur:true,dt:'any_random'},
@@ -237,7 +237,7 @@ function mkMiles(m){return m.map(function(x){return {at:x[0],txt:x[1],rw:x[2],gr
 var S;
 function mkMode(cfg,miles){return {cfg:cfg,miles:mkMiles(miles),set:[],stars:0,over:false,tot:{asg:0,comp:0,mR:0,mC:0,auto:0}};}
 function init(){
- S={mode:'SCM',gc:250000,sc:4.31,day:1,cs:86400,es:3*86400+14*3600,view:'lobby',prev:'lobby',popAt:0,curGame:'Digging Gold',excluded:false,
+ S={mode:'SCM',gc:250000,sc:4.31,day:1,cs:86400,es:3*86400+14*3600,view:'lobby',prev:'lobby',popAt:0,curGame:'Digging Gold',excluded:false,exclAll:false,
     bets:{SCM:0.10,GCM:5000},
     m:{SCM:mkMode(SC_CFG,[[4,'50,000 GC',{gc:50000}],[10,'1.00 SC',{sc:1}],[18,'150,000 GC',{gc:150000}],[30,'GRAND: 5.00 SC',{sc:5},true]]),
        GCM:mkMode(GC_CFG,[[4,'100,000 GC',{gc:100000}],[10,'250,000 GC',{gc:250000}],[18,'400,000 GC',{gc:400000}],[30,'GRAND: 1,000,000 GC',{gc:1000000},true]])}};
@@ -265,7 +265,7 @@ function act(){var md=M();return md.set.filter(function(c){return c.st==='active
 function anyClaim(){var md=M();return md.set.some(function(c){return c.st==='claim';})||md.miles.some(function(m){return m.reached&&!m.claimed;});}
 function fmtGC(v){return v.toLocaleString('en-US');}
 function fmtA(v){return S.mode==='SCM'?v.toFixed(2)+' SC':fmtGC(v)+' GC';}
-function rwTxt(rw){var p=[];if(rw.gc)p.push(fmtGC(rw.gc)+' GC');if(rw.sc)p.push(rw.sc.toFixed(2)+' SC');if(rw.stars)p.push(rw.stars+' ★');return p.join(' + ');}
+function rwTxt(rw){var p=[];if(rw.gc)p.push(fmtGC(rw.gc)+' GC');if(rw.sc)p.push(rw.sc.toFixed(2)+' SC');if(rw.fs)p.push(rw.fs+' Free Spins');if(rw.stars)p.push(rw.stars+' ★');return p.join(' + ');}
 function fmt(){el('gc1').textContent=fmtGC(S.gc);el('sc1').textContent=S.sc.toFixed(2);
  el('gBal').innerHTML=S.mode==='SCM'?('SC <b>'+S.sc.toFixed(2)+'</b>'):('GC <b>'+fmtGC(S.gc)+'</b>');}
 function redDot(){var on=anyClaim()&&!M().over;el('dot1').style.display=on?'block':'none';el('dot2').style.display=on?'block':'none';}
@@ -330,11 +330,11 @@ function progress(win,amt){var md=M();md.set.forEach(function(c,i){
   var p=c.got/c.need;[0.25,0.5,0.75].forEach(function(t){if(p>=t&&c.cp.indexOf(t)<0){c.cp.push(t);logQ('R7 checkpoint: '+c.id+' crossed '+(t*100)+'%','req');}});
   if(c.got>=c.need)complete(i);}
  });barUpd();if(S.view==='popup')chRender();}
-function grant(rw){if(rw.gc)S.gc+=rw.gc;if(rw.sc)S.sc=+(S.sc+rw.sc).toFixed(2);if(rw.stars)M().stars+=rw.stars;fmt();}
+function grant(rw){if(rw.gc)S.gc+=rw.gc;if(rw.sc)S.sc=+(S.sc+rw.sc).toFixed(2);if(rw.fs)logQ('Free Spins granted — added to the lobby Free Spins screen (existing flow)','exist');if(rw.stars)M().stars+=rw.stars;fmt();}
 function milesCheck(){var md=M();md.miles.forEach(function(m,i){if(!m.reached&&md.stars>=m.at){m.reached=true;md.tot.mR++;
  logQ((m.grand?'grand prize reached':'reached_milestone '+(i+1))+' (existing event)','exist');}});redDot();}
 function earlyEnd(){var md=M();var g=md.miles[3];if(g.claimed&&md.set.every(function(c){return c.st==='claimed';}))endEvent('early_completion');}
-function summary(items,title){el('ovTitle').textContent=title;
+function summary(items,title){el('ovOk').textContent='COLLECT';el('ovTitle').textContent=title;
  el('ovBody').innerHTML=items.length?('<ul style="margin:0;padding-left:18px;">'+items.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>'):'<p style="margin:0;">Nothing left unclaimed.</p>';
  el('overlay').style.display='block';}
 function endCycleMode(mode){var md=S.m[mode];if(md.over)return [];var granted=[];
@@ -343,11 +343,13 @@ function endCycleMode(mode){var md=S.m[mode];if(md.over)return [];var granted=[]
   else if(c.st==='locked'&&c.got>=c.need){logQ(c.id+' completed in background but LOCKED: not auto-claimed (spec rule)','exist');logQ('R12: '+c.id+' expired locked at 100%','req');}
   else if(c.got>0){logQ('R12: '+c.id+' expired at '+Math.round(c.got/c.need*100)+'% (was '+(c.st==='active'?'unlocked':'locked')+')','req');}
  });return granted;}
-function grant2(md,rw){if(rw.gc)S.gc+=rw.gc;if(rw.sc)S.sc=+(S.sc+rw.sc).toFixed(2);if(rw.stars)md.stars+=rw.stars;}
+function grant2(md,rw){if(rw.gc)S.gc+=rw.gc;if(rw.sc)S.sc=+(S.sc+rw.sc).toFixed(2);if(rw.fs)logQ('Free Spins granted — added to the lobby Free Spins screen (existing flow)','exist');if(rw.stars)md.stars+=rw.stars;}
 function endCycle(){var granted=endCycleMode('SCM').concat(endCycleMode('GCM'));
  S.day++;S.cs=86400;
- if(!S.m.SCM.over)assign('SCM');
- if(!S.m.GCM.over)assign('GCM');
+ ['SCM','GCM'].forEach(function(mode){var md=S.m[mode];
+  if(md.over)return;
+  if(md.miles[3].claimed){var keep=S.mode;S.mode=mode;endEvent('early_completion');S.mode=keep;}
+  else assign(mode);});
  milesCheck();
  if(granted.length)summary(granted,'Challenges refreshed! Auto-collected:');
  if(!M().over)logQ('R6 bar_shown: "'+act().name+'", 0%, red dot '+(anyClaim()?'ON':'off'),'req');
@@ -364,10 +366,19 @@ function applyExcl(c,logIt){var hit=(c.tg.game&&GAMES[c.tg.game]==='Jini Studios
  if(!hit||c.st==='claimed'||c.st==='claim')return;
  var orig=c.name;c.origName=orig;c.tg={};c.sub=true;var old=c.name;c.name=exclName(c);c.dt='any_random';
  if(logIt)logQ('R10: '+c.id+' substituted (provider_excluded): "'+orig+'" → "'+c.name+'", progress retained ('+Math.round(c.got/c.need*100)+'%)','req');}
-function applyExclusion(){if(S.excluded)return;S.excluded=true;
+function gameUnavailable(){el('ovTitle').textContent='Game Unavailable';
+ el('ovBody').innerHTML='<p style="margin:0;">All games are currently unavailable for this player (total exclusion by Risk). No fallback is applied, per the spec.</p>';
+ el('ovOk').textContent='OK';el('overlay').style.display='block';
+ logQ('Game Unavailable popup — total exclusion, no fallback (existing flow, PLAT-201)','exist');
+ logQ('R10: total_exclusion — no substitute possible','req');}
+function applyExclusion(){
+ if(S.excluded&&!S.exclAll){S.exclAll=true;
+  logQ('Risk Management excluded ALL providers for this player (existing flow)','exist');
+  el('exclude').disabled=true;el('exclude').textContent='All providers excluded';return;}
+ if(S.excluded)return;S.excluded=true;
  logQ('Risk Management excluded provider: Jini Studios (existing flow, PLAT-201)','exist');
  ['SCM','GCM'].forEach(function(mode){S.m[mode].set.forEach(function(c){applyExcl(c,true);});});
- el('exclude').disabled=true;el('exclude').textContent='Jini Studios excluded';
+ el('exclude').textContent='Risk-exclude ALL providers (total exclusion)';
  paintAll();}
 document.addEventListener('click',function(e){
  var t=e.target.closest('button, #bar, #icoWrap, #barGift');if(!t)return;
@@ -385,7 +396,7 @@ document.addEventListener('click',function(e){
   logQ('player switched to '+S.mode+' — its own event shows (events per mode, per spec)','exist');
   if(!M().over&&M().set.length)logQ('R6 bar_shown ['+S.mode+']: "'+act().name+'"','req');
   paintAll();show('lobby');return;}
- if(t.dataset.game){S.curGame=t.dataset.game;el('gName').textContent=S.curGame.toUpperCase();el('gProv').textContent=GAMES[S.curGame];show('game');return;}
+ if(t.dataset.game){if(S.exclAll){gameUnavailable();return;}S.curGame=t.dataset.game;el('gName').textContent=S.curGame.toUpperCase();el('gProv').textContent=GAMES[S.curGame];show('game');return;}
  if(t.classList.contains('betb')){S.bets[S.mode]=+t.dataset.bet;betRender();return;}
  if(t.id==='spinBtn'&&!M().over){var bet=S.bets[S.mode];var min=S.mode==='SCM'?0.10:5000;var win=Math.random()<0.55;
   var amt=win?+( (bet*(1.5+Math.random()*4)).toFixed(S.mode==='SCM'?2:0) ):0;
@@ -395,7 +406,7 @@ document.addEventListener('click',function(e){
   if(bet<min){el('spinRes').textContent=(win?'WIN +'+fmtA(amt):'No win')+' · below min bet: no challenge progress';return;}
   el('spinRes').textContent=win?'WIN +'+fmtA(amt):'No win · bet '+fmtA(bet);
   progress(win,amt);return;}
- if(t.dataset.play!==undefined){var c=M().set[+t.dataset.play];
+ if(t.dataset.play!==undefined){if(S.exclAll){gameUnavailable();return;}var c=M().set[+t.dataset.play];
   var dest=c.tg.game||((c.tg.prov==='Jini Studios')?'Digging Gold':(c.tg.prov==='Pragmatic Play'?'Fire Stampede':'Digging Gold'));
   if(S.excluded&&GAMES[dest]==='Jini Studios')dest='Fire Stampede';
   S.curGame=dest;el('gName').textContent=dest.toUpperCase();el('gProv').textContent=GAMES[dest];
